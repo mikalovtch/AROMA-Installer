@@ -54,7 +54,8 @@ getPathDirStatus(const char *path)
 
 int
 dirCreateHierarchy(const char *path, int mode,
-        const struct utimbuf *timestamp, bool stripFileName)
+        const struct utimbuf *timestamp, bool stripFileName,
+        struct selabel_handle *sehnd)
 {
     DirStatus ds;
 
@@ -84,7 +85,7 @@ dirCreateHierarchy(const char *path, int mode,
             c--;
         }
         if (c == cpath) {
-//xxx test this path
+            //xxx test this path
             /* No directory component.  Act like the path was empty.
              */
             errno = ENOENT;
@@ -144,7 +145,20 @@ dirCreateHierarchy(const char *path, int mode,
         } else if (ds == DMISSING) {
             int err;
 
+            char *secontext = NULL;
+
+            if (sehnd) {
+                selabel_lookup(sehnd, &secontext, cpath, mode);
+                setfscreatecon(secontext);
+            }
+
             err = mkdir(cpath, mode);
+
+            if (secontext) {
+                freecon(secontext);
+                setfscreatecon(NULL);
+            }
+
             if (err != 0) {
                 free(cpath);
                 return -1;
@@ -192,7 +206,7 @@ dirUnlinkHierarchy(const char *path)
     /* recurse over components */
     errno = 0;
     while ((de = readdir(dir)) != NULL) {
-//TODO: don't blow the stack
+        //TODO: don't blow the stack
         char dn[PATH_MAX];
         if (!strcmp(de->d_name, "..") || !strcmp(de->d_name, ".")) {
             continue;
