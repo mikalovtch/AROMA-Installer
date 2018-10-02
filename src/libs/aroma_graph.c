@@ -307,24 +307,36 @@ byte ag_init() {
   }
   
 #if defined(AROMA_MINUI)
+	LOGS("MINUI_Init\n");
   aroma_minui_init();
 #endif
-
+LOGS("Opening frame buffer\n");
   //-- Open Framebuffer
   ag_fb = open(AROMA_FRAMEBUFFER, O_RDWR, 0);
   if (ag_fb > 0) {
+LOGS("Init Info from IO\n");
     //-- Init Info from IO
     ioctl(ag_fb, FBIOGET_FSCREENINFO, &ag_fbf);
     ioctl(ag_fb, FBIOGET_VSCREENINFO, &ag_fbv);
+    //ag_fbv.xres=5760;
+    //ag_fbv.yres=2880;
+    LOGS("Init 32 Buffer\n");
     //-- Init 32 Buffer
-    ag_canvas(&ag_c, ag_fbv.xres, ag_fbv.yres);
-    ag_dp = floor( min(ag_fbv.xres, ag_fbv.yres) / 160);
+    ag_canvas(&ag_c, 1440, 2880);
+    ag_dp = floor( min(ag_fbv.xres, ag_fbv.yres) / 70);
+    LOGS("Init Frame Buffer Size\n");
     //-- Init Frame Buffer Size
     agclp    = (ag_fbv.bits_per_pixel >> 3);
     ag_fbsz  = (ag_fbv.xres * ag_fbv.yres * ((agclp == 3) ? 4 : agclp));
     
     //-- Init Frame Buffer
 #if defined (AROMA_MINUI)
+
+LOGS("ag_fbv.xres%u\n",ag_fbv.xres);
+LOGS("ag_fbv.yres%u\n",ag_fbv.yres);
+
+
+LOGS("Opening MINUI_Init frame buffer\n");
     if (ag_fbv.bits_per_pixel == 16) {
       ag_32   = 0;
       ag_fbuf = (word *) mmap(0, ag_fbf.smem_len, PROT_READ | PROT_WRITE, MAP_SHARED, ag_fb, 0);
@@ -333,6 +345,7 @@ byte ag_init() {
       //-- Resolution with Stride
       ag_16strd = 0;
       ag_16w    = ag_fbf.line_length / 2;
+LOGS("ag_16w%d\n",ag_16w);
       
       if (ag_16w != ag_fbv.xres) {
         if (ag_16w / 2 == ag_fbv.xres) {
@@ -394,6 +407,7 @@ byte ag_init() {
       */
       //-- Memory Allocation
       #if defined (AROMA_MINUI)
+	LOGS("After memory allocation\n");
       ag_fbuf32 = (byte *) aroma_minui_get_data();
       #else
       ag_fbuf32 = (byte *) mmap(0, ag_fbf.smem_len, PROT_READ | PROT_WRITE, MAP_SHARED, ag_fb, 0);
@@ -407,7 +421,9 @@ byte ag_init() {
       colorspace_positions[3] = 24;
       ag_blank(NULL); //-- 32bit Use Blank
       int x, y;
-      
+      LOGS("Start drawing\n");
+	LOGS("ag_c.w%d\n",ag_c.w);
+LOGS("ag_c.h%d\n",ag_c.h);
       for (y = 0; y < ag_fbv.yres; y++) {
         int yp = y * ag_fbv.xres;
         int yd = (ag_fbf.line_length * y);
