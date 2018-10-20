@@ -310,20 +310,23 @@ byte ag_init() {
 	LOGS("MINUI_Init\n");
   aroma_minui_init();
 #endif
-LOGS("Opening frame buffer\n");
+  LOGS("Opening frame buffer\n");
   //-- Open Framebuffer
   ag_fb = open(AROMA_FRAMEBUFFER, O_RDWR, 0);
   if (ag_fb > 0) {
-LOGS("Init Info from IO\n");
+    LOGS("Init Info from IO\n");
     //-- Init Info from IO
     ioctl(ag_fb, FBIOGET_FSCREENINFO, &ag_fbf);
     ioctl(ag_fb, FBIOGET_VSCREENINFO, &ag_fbv);
-    //ag_fbv.xres=5760;
-    //ag_fbv.yres=2880;
+    ag_fbf.line_length=5760;
+    ag_fbf.smem_len=29491200;
+    ag_fbv.xres=1440;
+    ag_fbv.yres=2880;
+    ag_fbv.yoffset=0;
     LOGS("Init 32 Buffer\n");
     //-- Init 32 Buffer
-    ag_canvas(&ag_c, 1440, 2880);
-    ag_dp = floor( min(ag_fbv.xres, ag_fbv.yres) / 70);
+    ag_canvas(&ag_c, ag_fbv.xres, ag_fbv.yres);
+    ag_dp = floor( min(ag_fbv.xres, ag_fbv.yres) / 160);
     LOGS("Init Frame Buffer Size\n");
     //-- Init Frame Buffer Size
     agclp    = (ag_fbv.bits_per_pixel >> 3);
